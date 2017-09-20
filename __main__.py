@@ -1,4 +1,8 @@
 #groupname_fre.xml
+#Matthew Cooke
+#McGill University COMP551 2017
+#Project 1
+
 import praw
 import pathlib
 import os
