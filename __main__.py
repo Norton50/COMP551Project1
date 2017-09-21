@@ -6,6 +6,8 @@
 import praw
 import pathlib
 import os
+import argparse
+from langdetect import detect_langs, DetectorFactory
 
 class mainRedditParser():
     def __init__(self):
@@ -34,7 +36,9 @@ class mainRedditParser():
                 self.getSubComments(comment,self.allComments) #get all lower level comments, add to list
                 print("<s>",end='')
                 for aComment in self.allComments:#for each of the comments in our list, print them according to XML style
-                    print("<utt uid=\"", self.find_element_in_list(aComment.author), "\">", aComment.body.replace('\r', ' ').replace('\n', ' '), "</utt>", end='')
+                    theComment = aComment.body.replace('\r', ' ').replace('\n', ' ')
+                    if (self.detect_language(theComment)):
+                        print("<utt uid=\"", self.find_element_in_list(aComment.author), "\">", theComment, "</utt>", end='')
                 print("</s>")
 
 
@@ -53,7 +57,18 @@ class mainRedditParser():
         for child in replies:
             self.getSubComments(child, allComments)
 
+    def detect_language(self, text):
+        try:
+            langlist = str(detect_langs(text))
+            if (langlist.find('fr') != -1 ):
+                return True
+            else:
+                return False
+        except:
+            return True
 
+
+DetectorFactory.seed = 0
 print("<dialog>")
 mainRedditParser()
 print("</dialog>")
