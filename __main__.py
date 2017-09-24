@@ -18,6 +18,8 @@ class mainRedditParser():
                              client_secret='HjTCmkLhpM4oOjjSeyYK2KOoMhw',
                              user_agent='Downloading reddit comments',
                              ) #this authenticates my reddit account, do not change
+        self.stringComment = ''
+        self.output_file = open('file.xml', 'w', encoding='utf-8')
         self.getComments() #call the getcomments function on init
 
     def find_element_in_list(self, element): #this function returns either the user id of the user if previously indexed, or a new id
@@ -29,20 +31,30 @@ class mainRedditParser():
             return self.find_element_in_list(element)
 
     def getComments(self): #this gets all the comments in the france subreddit
-        for submission in self.reddit.subreddit('france').hot(limit=10): #limit is how many threads to explore, use a low number for testing
-            self.getAllCommentsRec(submission) #get all comments recursively
+        for submission in self.reddit.subreddit('mcgill').hot(limit=20): #limit is how many threads to explore, use a low number for testing
+            self.getTopLevelComments(submission) #get all comments recursively
+            self.stringComment = ''
             for comment in self._commentCache: #for every toplevel comment
-                self.allComments = [] #resent out list
-                self.getSubComments(comment,self.allComments) #get all lower level comments, add to list
-                print("<s>",end='')
+                self.allComments = [] #reset out list
+                self.getSubComment(comment,self.allComments) #get all lower level comments, add to list
+                #print("<s>",end='', file=self.output_file)
+                self.stringComment += "<s>"
                 for aComment in self.allComments:#for each of the comments in our list, print them according to XML style
                     theComment = aComment.body.replace('\r', ' ').replace('\n', ' ')
-                    if (self.detect_language(theComment)):
-                        print("<utt uid=\"", self.find_element_in_list(aComment.author), "\">", theComment, "</utt>", end='')
-                print("</s>")
+                    #if (self.detect_language(theComment)):
+                    self.stringComment += ' '.join(["<utt uid=\"", str(self.find_element_in_list(aComment.author)), "\">", theComment, "</utt>"])
+                self.stringComment += "</s>\n"
+            print(self.stringComment, end='', file=self.output_file) # print once for each thread
+    
+    def getTopLevelComments(self,subm):
+        self._commentCache = subm.comments
+        
+    def getSubComment(self, comment, allComments):
+        allComments.append(comment)
+        if comment.replies:
+            self.getSubComment(comment.replies[0], allComments)
 
-
-    def getAllCommentsRec(self, subm): #get all toplevel comments recursively
+    def getAllCommentsRec(self, subm): #note that this gets all comments, starting with root, then level 1, level 2...
         subm.comments.replace_more(limit=0)
         for comment in subm.comments.list():
             self._commentCache.append(comment)
@@ -70,5 +82,6 @@ class mainRedditParser():
 
 DetectorFactory.seed = 0
 print("<dialog>")
-mainRedditParser()
+a = mainRedditParser()
+print(len(a._commentCache))
 print("</dialog>")
