@@ -36,24 +36,26 @@ class mainRedditParser():
     def getComments(self): #this gets all the comments in the france subreddit
         print("<dialog>", file=self.output_file)
         
-        for submission in self.reddit.subreddit('france').hot(limit=100):      #limit is how many threads to explore, use a low number for testing
+        for submission in self.reddit.subreddit('france').top(limit=1000):      #limit is how many threads to explore, use a low number for testing
             self.getTopLevelComments(submission)                                #get all toplevel comments
             self.stringSequences = ''                                            #clear for each submission
             for comment in self.commentCache:                                   #for every toplevel comment
                 self.userCache = []                                             #reset users for each conversation
                 self.commentSequence = []                                       #reset out list
                 newSequence = ''
+                numUtterances = 0
                 self.getSubComment(comment,self.commentSequence)                #get the first sequence of replies to the comment
                 for aComment in self.commentSequence:                           #for each of the comments (utterances) in the sequence, append in XML format to string
                     theComment = aComment.body.replace('\r', ' ').replace('\n', ' ')
                     if (self.detect_language(theComment)):
                         newSequence += ''.join(["<utt uid=\"", str(self.find_element_in_list(aComment.author)), "\">", theComment, "</utt>"])
+                        numUtterances += 1
                     else:
                         self.commentSequence = []                               #ignore the rest of the comments after the french comment
-                if newSequence:
+                if numUtterances > 1:
                     newSequence = "<s>" + newSequence + "</s>\n"
                     self.stringSequences += newSequence
-            print(self.stringSequences, end='', file=self.output_file)           #call print once for each thread
+            print(self.stringSequences, end='', file=self.output_file)          #call print once for each thread
             self.numSequences += len(self.commentCache)                        #track number of comment sequences we should end up with
         
         print("</dialog>", file=self.output_file)
